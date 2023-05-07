@@ -1,1 +1,1 @@
-# A.I.-project
+# Income Prediction Model
