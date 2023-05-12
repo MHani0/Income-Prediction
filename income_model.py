@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-
 # read csv file
 cols = ['Age', 'Work Class', 'Final Weight', 'Type of Education', 'Years of Education', 'Marital Status',
         'Occupation', 'Relationship', 'Race', 'Sex', 'Capital Gain', 'Capital Loss', 'Hours/Week', 'Native Country',
@@ -51,9 +50,7 @@ df.reset_index(drop=True, inplace=True)
 
 print(df)
 
-
-
-
-
-
-
+corr = df.corr()
+print(corr)
+df.drop(['Final Weight' , 'Type of Education' , 'Marital Status' , 'Occupation' , 'Race' , 'Native Country'], axis='columns', inplace=True)
+print(df)
