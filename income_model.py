@@ -12,7 +12,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 def preprocessing(df):
 
-    print("\nPre-processing Statistics:\n")
     # remove whitespaces from string columns
     for col in df.columns:
         col = col.strip()
@@ -28,11 +27,9 @@ def preprocessing(df):
 
     # NaN statistics
     nulls = df.isna().sum()
-    print("\nNaN Stats:\n\n")
 
     for col, index in zip(nulls, df.columns):
         nan_percentage = round(col * 100 / len(df), 2)
-        print(index + "\n" + str(col) + "\n" + str(nan_percentage) + "%\n")
 
     # drop null
     df.dropna(how='any', inplace=True)
@@ -45,17 +42,16 @@ def preprocessing(df):
 
     # display number of duplicated rows and null
     duplicates = df.duplicated().sum()
-    print("\nDuplicates found: " + str(duplicates) + "\n")
 
     df.drop_duplicates(inplace=True)
 
     df.reset_index(drop=True, inplace=True)
 
-    print(df)
+
+
+## Preprocessing
 
 # read csv file
-
-
 train_df = pd.read_csv("data/train_data.csv")
 test_df = pd.read_csv('data/test_data.csv')
 
@@ -63,8 +59,10 @@ preprocessing(train_df)
 preprocessing(test_df)
 
 
-# Lasso Regression
 
+##Feature selection
+
+# Lasso Regression
 # Split the dataset into X (input features) and y (target variable)
 X_train = train_df[['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']]
 Y_train = train_df['Income']
@@ -72,12 +70,9 @@ X_test = test_df[['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-los
 Y_test = test_df['Income']
 
 # Standardize the continuous & encoded variables
-
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
-
-print(X_scaled)
 
 scaled_columns = ['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']
 
@@ -97,13 +92,10 @@ train_df_scaled.drop("Income", axis=1, inplace=True)
 test_df_scaled = pd.concat([test_remaining_columns.reset_index(drop=True), X_test_scaled_df.reset_index(drop=True)], axis=1)
 test_df_scaled.drop("Income", axis=1, inplace=True)
 
-print(train_df_scaled)
-print(test_df_scaled)
-
 # Grid Search
 param_grid = {
-    'alpha': [0.02, 0.01, 0.05, 0.07, 0.1, 0.2, 0.5, 0.7, 1.0],
-    'max_iter': [3000, 1000, 2000, 4000, 5000],
+    'alpha': [i/100 for i in range(1, 201, 10)],
+    'max_iter': [i for i in range(1000, 10001, 500)],
 }
 
 # Fit the Lasso regression model
@@ -113,10 +105,7 @@ grid_search.fit(train_df_scaled, Y_train)
 
 # Get the best hyperparameters from the grid search
 best_alpha = grid_search.best_params_['alpha']
-print(best_alpha)
-
 best_max_iter = grid_search.best_params_['max_iter']
-print(best_max_iter)
 
 lasso = Lasso(alpha=best_alpha, max_iter=best_max_iter)
 lasso.fit(train_df_scaled, Y_train)
@@ -126,21 +115,14 @@ coefficients = lasso.coef_
 
 # Select features based on coefficients that aren't zeroed by standardization
 selected_features = train_df_scaled.columns[lasso.coef_ != 0]
-print("Selected features:", selected_features)
-
 
 # Filter the scaled train and test datasets based on the selected features
-
 train_df_scaled_selected = train_df_scaled[selected_features]
 test_df_scaled_selected = test_df_scaled[selected_features]
 
 
-print(train_df_scaled_selected)
-print(test_df_scaled_selected)
 
-
-# Classification
-
+## Classification
 # logistic training
 logreg = LogisticRegression(max_iter=1000)
 logreg.fit(train_df_scaled_selected, Y_train)
@@ -157,7 +139,9 @@ tree.fit(train_df_scaled_selected, Y_train)
 random_forest = RandomForestClassifier()
 random_forest.fit(train_df_scaled_selected, Y_train)
 
-# Evaluation
+
+
+## Evaluation
 
 # logistic evaluation
 logreg_pred = logreg.predict(test_df_scaled_selected)
@@ -184,7 +168,6 @@ tree_f1 = f1_score(Y_test, tree_pred)
 tree_cm = confusion_matrix(Y_test, tree_pred)
 
 # random forest evaluation
-
 rf_pred = random_forest.predict(test_df_scaled_selected)
 rf_acc = accuracy_score(Y_test, rf_pred)
 rf_prec = precision_score(Y_test, rf_pred)
@@ -193,12 +176,14 @@ rf_f1 = f1_score(Y_test, rf_pred)
 rf_cm = confusion_matrix(Y_test, rf_pred)
 
 # printint evaluation
+print('\n')
 print('Logistic Regression: Accuracy = {}, Precision = {}, Recall = {}, F1-score = {}'.format(logreg_acc, logreg_prec, logreg_recall, logreg_f1))
 print('SVM: Accuracy = {}, Precision = {}, Recall = {}, F1-score = {}'.format(svm_acc, svm_prec, svm_recall, svm_f1))
 print('Decision Tree: Accuracy = {}, Precision = {}, Recall = {}, F1-score = {}'.format(tree_acc, tree_prec, tree_recall, tree_f1))
 print('Random Forest: Accuracy = {}, Precision = {}, Recall = {}, F1-score = {}'.format(rf_acc, rf_prec, rf_recall, rf_f1))
 
 # printing confusion matrices
+print('\n')
 print('Logistic Regression Confusion Matrix:\n{}'.format(logreg_cm))
 print('SVM Confusion Matrix:\n{}'.format(svm_cm))
 print('Decision Tree Confusion Matrix:\n{}'.format(tree_cm))
