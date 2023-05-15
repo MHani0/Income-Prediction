@@ -26,14 +26,8 @@ def preprocessing(df):
         nan_percentage = round(col * 100 / len(df), 2)
         print(index + "\n" + str(col) + "\n" + str(nan_percentage) + "%\n")
 
-## Workable for later
-    # fill null with mode
-    df['workclass'].fillna(df['workclass'].mode()[0], inplace=True)
-    df['native-country'].fillna(df['native-country'].mode()[0], inplace=True)
-
     # drop null
-    df.dropna(subset=['occupation'], inplace=True)
-##
+    df.dropna(how='any', inplace=True)
 
     # mapping categorical values to numerals
     for col in df.columns:
@@ -87,9 +81,9 @@ coefficients = lasso.coef_
 selected_features = X.columns[lasso.coef_ != 0]
 print("Selected features:", selected_features)
 
-for col in train_df.columns:
-    if col in selected_features or col == 'Income':
+for cols in train_df.columns:
+    if cols in selected_features or cols == 'Income':
         continue
-    train_df.drop(col, axis=1, inplace=True)
+    train_df.drop(cols, axis=1, inplace=True)
 
 print(train_df)
