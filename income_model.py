@@ -65,9 +65,9 @@ preprocessing(test_df)
 # Lasso Regression
 
 # Split the dataset into X (input features) and y (target variable)
-X_train = train_df.drop('Income', axis=1)
+X_train = train_df[['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']]
 Y_train = train_df['Income']
-X_test = test_df.drop('Income', axis=1)
+X_test = test_df[['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']]
 Y_test = test_df['Income']
 
 X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.2, random_state=42)
@@ -75,6 +75,7 @@ X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.
 # Standardize the continuous & encoded variables
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 print(X_scaled)
 
 # Fit the Lasso regression model
@@ -97,35 +98,36 @@ for cols in train_df.columns:
     if cols in selected_features or cols == 'Income':
         continue
     train_df.drop(cols, axis=1, inplace=True)
+    test_df.drop(cols, axis=1, inplace=True)
 
 
 print(train_df)
 
 
 logreg = LogisticRegression(max_iter=1000)
-logreg.fit(X_train, Y_train)
+logreg.fit(X_scaled, Y_train)
 
 svm = SVC()
-svm.fit(X_train, Y_train)
+svm.fit(X_scaled, Y_train)
 
 tree = DecisionTreeClassifier()
-tree.fit(X_train, Y_train)
+tree.fit(X_scaled, Y_train)
 
-logreg_pred = logreg.predict(X_test)
+logreg_pred = logreg.predict(X_test_scaled)
 logreg_acc = accuracy_score(Y_test, logreg_pred)
 logreg_prec = precision_score(Y_test, logreg_pred)
 logreg_recall = recall_score(Y_test, logreg_pred)
 logreg_f1 = f1_score(Y_test, logreg_pred)
 logreg_cm = confusion_matrix(Y_test, logreg_pred)
 
-svm_pred = svm.predict(X_test)
+svm_pred = svm.predict(X_test_scaled)
 svm_acc = accuracy_score(Y_test, svm_pred)
 svm_prec = precision_score(Y_test, svm_pred)
 svm_recall = recall_score(Y_test, svm_pred)
 svm_f1 = f1_score(Y_test, svm_pred)
 svm_cm = confusion_matrix(Y_test, svm_pred)
 
-tree_pred = tree.predict(X_test)
+tree_pred = tree.predict(X_test_scaled)
 tree_acc = accuracy_score(Y_test, tree_pred)
 tree_prec = precision_score(Y_test, tree_pred)
 tree_recall = recall_score(Y_test, tree_pred)
