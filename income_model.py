@@ -5,7 +5,8 @@ cols = ['Age', 'Work Class', 'Final Weight', 'Type of Education', 'Years of Educ
         'Occupation', 'Relationship', 'Race', 'Sex', 'Capital Gain', 'Capital Loss', 'Hours/Week', 'Native Country',
         'Income']
 
-df = pd.read_csv("data/train_data.csv", names=cols)
+train_df = pd.read_csv("data/train_data.csv", names=cols)
+test_df = pd.read_csv('data/test_data.csv')
 
 print("\nPre-processing Statistics:\n")
 # remove whitespaces from string columns
