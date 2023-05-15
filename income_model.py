@@ -1,59 +1,95 @@
 import pandas as pd
 import numpy as np
+from sklearn.linear_model import Lasso
+from sklearn.preprocessing import StandardScaler
+
+
+def preprocessing(df):
+
+    print("\nPre-processing Statistics:\n")
+    # remove whitespaces from string columns
+    for col in df.columns:
+        if df[col].dtype == 'object':  # check if the column contains strings
+            df[col] = df[col].str.strip()
+        # illegal format check
+        elif col in ['age', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']:
+            df.loc[df[col] < 0, col] = 0
+
+    # replacing "?" with NaN
+    df.replace('?', np.nan, inplace=True)
+
+    # NaN statistics
+    nulls = df.isna().sum()
+    print("\nNaN Stats:\n\n")
+
+    for col, index in zip(nulls, df.columns):
+        nan_percentage = round(col * 100 / len(df), 2)
+        print(index + "\n" + str(col) + "\n" + str(nan_percentage) + "%\n")
+
+## Workable for later
+    # fill null with mode
+    df['workclass'].fillna(df['workclass'].mode()[0], inplace=True)
+    df['native-country'].fillna(df['native-country'].mode()[0], inplace=True)
+
+    # drop null
+    df.dropna(subset=['occupation'], inplace=True)
+##
+
+    # mapping categorical values to numerals
+    for col in df.columns:
+        if col in ['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']:
+            df[col] = df[col].astype(int)
+            continue
+        df[col], _ = pd.factorize(df[col])
+
+    # display number of duplicated rows and null
+    duplicates = df.duplicated().sum()
+    print("\nDuplicates found: " + str(duplicates) + "\n")
+
+    df.drop_duplicates(inplace=True)
+
+    df.reset_index(drop=True, inplace=True)
+
+    print(df)
+
 
 # read csv file
-cols = ['Age', 'Work Class', 'Final Weight', 'Type of Education', 'Years of Education', 'Marital Status',
-        'Occupation', 'Relationship', 'Race', 'Sex', 'Capital Gain', 'Capital Loss', 'Hours/Week', 'Native Country',
-        'Income']
+train_df = pd.read_csv("data/train_data.csv")
+test_df = pd.read_csv('data/test_data.csv')
 
-df = pd.read_csv("data/train_data.csv", names=cols)
+preprocessing(train_df)
+preprocessing(test_df)
 
-print("\nPre-processing Statistics:\n")
-# remove whitespaces from string columns
-for col in df.columns:
-    if df[col].dtype == 'object':  # check if the column contains strings
-        df[col] = df[col].str.strip()
-    # illegal format check
-    elif col in ['Age', 'Years of Education', 'Capital Gain', 'Capital Loss', 'Hours/Week']:
-        df.loc[df[col] < 0, col] = 0
 
-# replacing "?" with NaN
-df.replace('?', np.nan, inplace=True)
+# Lasso Regression
 
-# NaN statistics
-nulls = df.isna().sum()
-print("\nNaN Stats:\n\n")
+# Split the dataset into X (input features) and y (target variable)
+X = train_df.drop('Income', axis=1)
+y = train_df['Income']
 
-for col, index in zip(nulls, df.columns):
-    nan_percentage = round(col*100/len(df),2)
-    print(index + "\n" + str(col) + "\n" + str(nan_percentage) + "%\n")
+# Standardize the continuous & encoded variables
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-# fill null with mode
-df['Work Class'].fillna(df['Work Class'].mode()[0], inplace=True)
-df['Native Country'].fillna(df['Native Country'].mode()[0], inplace=True)
+# Fit the Lasso regression model
+alpha = 0.01  # Hyperparameter
+lasso = Lasso(alpha=alpha)  # Set the regularization strength (alpha)
+lasso.fit(X_scaled, y)
 
-# drop null
-df.dropna(subset=['Occupation'], inplace=True)
+max_iter = 1000  # Hyperparameter
+lasso = Lasso(alpha=alpha, max_iter=max_iter)
+lasso.fit(X_scaled, y)
 
-# mapping categorical values to numerals
-for col in df.columns:
-    if col in ['Age', 'Final Weight', 'Years of Education', 'Capital Gain', 'Capital Loss', 'Hours/Week']:
+# Access the coefficients
+coefficients = lasso.coef_
+
+# Select features based on coefficients that aren't zeroed by standardization
+selected_features = X.columns[lasso.coef_ != 0]
+print("Selected features:", selected_features)
+
+for col in train_df.columns:
+    if col in selected_features or col == 'Income':
         continue
-    df[col], _ = pd.factorize(df[col])
+    train_df.drop(col, axis=1, inplace=True)
 
-# display number of duplicated rows and null
-duplicates = df.duplicated().sum()
-print("\nDuplicates found: " + str(duplicates) + "\n")
-
-df.drop_duplicates(inplace=True)
-
-df.reset_index(drop=True, inplace=True)
-
-print(df)
-
-
-
-
-
-
-
+print(train_df)
