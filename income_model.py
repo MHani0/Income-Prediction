@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from sklearn.linear_model import Lasso
+from sklearn.preprocessing import StandardScaler
 
 
 def preprocessing(df):
@@ -57,3 +59,37 @@ test_df = pd.read_csv('data/test_data.csv')
 
 preprocessing(train_df)
 preprocessing(test_df)
+
+
+# Lasso Regression
+
+# Split the dataset into X (input features) and y (target variable)
+X = train_df.drop('Income', axis=1)
+y = train_df['Income']
+
+# Standardize the continuous & encoded variables
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Fit the Lasso regression model
+alpha = 0.01  # Hyperparameter
+lasso = Lasso(alpha=alpha)  # Set the regularization strength (alpha)
+lasso.fit(X_scaled, y)
+
+max_iter = 1000  # Hyperparameter
+lasso = Lasso(alpha=alpha, max_iter=max_iter)
+lasso.fit(X_scaled, y)
+
+# Access the coefficients
+coefficients = lasso.coef_
+
+# Select features based on coefficients that aren't zeroed by standardization
+selected_features = X.columns[lasso.coef_ != 0]
+print("Selected features:", selected_features)
+
+for col in train_df.columns:
+    if col in selected_features or col == 'Income':
+        continue
+    train_df.drop(col, axis=1, inplace=True)
+
+print(train_df)
